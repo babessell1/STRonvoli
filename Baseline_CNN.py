@@ -18,17 +18,18 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
 #Design CNN model 
-
+# Use dialted model
 class CNN(nn.Module):
     def __init__(self, size):
         '''size is the total number of positions (around start + end) we have'''
         super(CNN, self).__init__(size)
-        self.conv1 = nn.Conv1d(5, 320, kernel_size = 6)#Output of this should be (batchsize, 320,1000-5) assuming no padding and kernel size = num columns 
-        self.pool1 = nn.MaxPool1d(5) #(Kernel size, stride) = (5,1). So output of this should be (batchsize, 320, 995/5)
-        self.conv2 = nn.Conv1d(320,480, kernel_size = 5) #Output should be (batchsize, 480,195)
-        self.pool2 = nn.MaxPool1d(5) #Output shd be (batchsize, 480, 39)
+        self.conv1 = nn.Conv1d(5, 320, kernel_size = 6,
+                               dilation=10) # (batchsize, 320, 945)
+        self.pool1 = nn.MaxPool1d(5) # (batchsize, 320, 189)
+        self.conv2 = nn.Conv1d(320,480, kernel_size = 5) # (batchsize, 480, 185)
+        self.pool2 = nn.MaxPool1d(5) # (batchsize, 480, 37)
         
-        self.fc1 = nn.Linear((480*39)+size, 256) #THE input will be larger based on how big metadata is (we input in forward func)
+        self.fc1 = nn.Linear((480*37)+size, 256) #THE input will be larger based on how big metadata is (we input in forward func)
         self.fc2 = nn.Linear(256,128)
         self.fc3 = nn.Linear(128,1)
     
@@ -38,7 +39,7 @@ class CNN(nn.Module):
         out = nn.functional.relu(self.conv2(out))
         out = self.pool2(out)
  
-        out = torch.flatten(out, start_dim=1) #Should return (batchsize, 64*4*4)
+        out = torch.flatten(out, start_dim=1) #Should return (batchsize, 480*37)
     
         #Concatenate metadata here!
         
