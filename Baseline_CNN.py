@@ -4,17 +4,28 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from torchvision import datasets 
 from torchvision.transforms import ToTensor
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, random_split
 from torch import nn
 from torch import optim
+import STRDataset
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-
+metadata_file = '/nfs/turbo/dcmb-class/bioinf593/groups/group_05/output/trgt/repeatregion_10_parsedvcf.txt'
+ohe_dir = '/nfs/turbo/dcmb-class/bioinf593/groups/group_05/output/depth'
 #Custom Dataset class
+data = STRDataset(ohe_dir, metadata_file)
+train_ratio = 0.2
+train_size = len(data) * train_ratio
+test_size = len(data) - train_size
 
 
 #Custom Dataloader class for train/test
+generator = torch.Generator().manual_seed(1)
+train_data, test_data = random_split(data, [train_size, test_size], generator=generator)
 
+batch_size = 64
+trainloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+validloader = DataLoader(test_data, batch_size=batch_size, shuffle=False)
 
 
 #Design CNN model 
@@ -74,7 +85,6 @@ optimizer = optim.Adam(net.parameters(), lr=learning)
 losses_t = [] #Test loss over epochs
 for e in range(max_epochs):
     loss_l = 0
-    batch_size = 0 #Track total number of samples.. should just be overall total but just to ensure
     net.train() #Train mode
     for (batch_idx, batch) in enumerate(trainloader):
         (X, labels) = batch
