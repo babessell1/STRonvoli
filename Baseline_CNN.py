@@ -65,56 +65,56 @@ class CNN(nn.Module):
 if __name__ == "__main__":
     
 
-#Create train, valid, test datasets + dataloaders 
+    #Create train, valid, test datasets + dataloaders 
 
-    
-    
-    
-#Train
+        
+        
+        
+    #Train
 
-#Parameters (to change): 
-pos_count = 1000
-max_epochs = 50
-learning = 0.0001
+    #Parameters (to change): 
+    pos_count = 1000
+    max_epochs = 50
+    learning = 0.0001
 
-net = CNN(pos_count).to(device)
-criterion = nn.CrossEntropyLoss()  # Same as NLLLoss except NLLLoss takes output of softmax func
-optimizer = optim.Adam(net.parameters(), lr=learning)
+    net = CNN(pos_count).to(device)
+    criterion = nn.CrossEntropyLoss()  # Same as NLLLoss except NLLLoss takes output of softmax func
+    optimizer = optim.Adam(net.parameters(), lr=learning)
 
-#losses = [] #Gives loss for each epoch (keys are epochs)
-losses_t = [] #Test loss over epochs
-for e in range(max_epochs):
-    loss_l = 0
-    net.train() #Train mode
-    for (batch_idx, batch) in enumerate(trainloader):
-        (X, labels) = batch
-        X = X.to(device)
-        labels = labels.to(device)
-        optimizer.zero_grad()
-        output = net(X) #Will be (batch_size, 10)
-        loss = criterion(output, labels)
-        loss.backward()
-        optimizer.step()
-        #loss_l.append(loss.cpu().detach().numpy()) #Remove grad requirement + convert to np array to be able to plot
-        #batch_size += len(labels)
-    #losses.append(sum(loss_l)/batch_size)
-    #print(losses[e])
-    print(f'Epoch {e} done')
-    
-    net.eval()
-    for (t,y) in validloader:
-        t = t.to(device)
-        y = y.to(device)
-        out = net(t)
-        lossl = criterion(out, y)
-        loss_l += (lossl.data.item())
-    losses_t.append(loss_l/len(validloader))
-    print(loss_l/len(validloader))
-    
+    #losses = [] #Gives loss for each epoch (keys are epochs)
+    losses_t = [] #Test loss over epochs
+    for e in range(max_epochs):
+        loss_l = 0
+        net.train() #Train mode
+        for (batch_idx, batch) in enumerate(trainloader):
+            (X, labels) = batch
+            X = X.to(device)
+            labels = labels.to(device)
+            optimizer.zero_grad()
+            output = net(X) #Will be (batch_size, 10)
+            loss = criterion(output, labels)
+            loss.backward()
+            optimizer.step()
+            #loss_l.append(loss.cpu().detach().numpy()) #Remove grad requirement + convert to np array to be able to plot
+            #batch_size += len(labels)
+        #losses.append(sum(loss_l)/batch_size)
+        #print(losses[e])
+        print(f'Epoch {e} done')
+        
+        net.eval()
+        for (t,y) in validloader:
+            t = t.to(device)
+            y = y.to(device)
+            out = net(t)
+            lossl = criterion(out, y)
+            loss_l += (lossl.data.item())
+        losses_t.append(loss_l/len(validloader))
+        print(loss_l/len(validloader))
+        
 
-plt.plot(losses_t)
-plt.xlabel('Epochs')
-plt.ylabel('Average cross entropy loss over batches in each epoch')
-plt.title('Validation Loss over epochs for MNIST classification using CNN')
-plt.savefig('Average Validation loss (across all batches) over epochs')
+    plt.plot(losses_t)
+    plt.xlabel('Epochs')
+    plt.ylabel('Average cross entropy loss over batches in each epoch')
+    plt.title('Validation Loss over epochs for MNIST classification using CNN')
+    plt.savefig('Average Validation loss (across all batches) over epochs')
     
