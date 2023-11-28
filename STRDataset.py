@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import pandas as pd
 from torch.utils import data
 
@@ -15,10 +16,15 @@ class STRDataset(data.Dataset):
     
     def __getitem__(self, idx):
         locus = self.metadata['trid'].iloc[idx]
-        ohe = os.path.join(self.ohe_dir, f'{locus}.npy')
+        sample_name = self.metadata['sample_name'].iloc[idx]
+
+        ohe_file = os.path.join(self.ohe_dir, f'{sample_name}_{locus}.npy')
+        ohe = np.load(ohe_file)
+        
         mc = self.metadata['MC'].iloc[idx]
         mc_split = mc.str.split(',', expand=True).astype(float)
         label = mc_split.apply(lambda row: max(row[0], row[1]), axis=1)
+        
         metadata = self.metadata.iloc[idx, :]
 
         return ohe, label, metadata
