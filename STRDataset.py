@@ -18,7 +18,7 @@ class STRDataset(data.Dataset):
         locus = self.metadata['trid'].iloc[idx]
         sample_name = self.metadata['sample_name'].iloc[idx]
 
-        ohe_file = os.path.join(self.ohe_dir, f'{sample_name}_{locus}.npy')
+        ohe_file = os.path.join(self.ohe_dir, sample_name, f'{sample_name}_{locus}.npy')
         ohe = np.load(ohe_file)
         
         mc = self.metadata['MC'].iloc[idx]
