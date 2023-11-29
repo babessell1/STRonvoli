@@ -4,16 +4,11 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from torchvision import datasets 
 from torchvision.transforms import ToTensor
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from torch import nn
 from torch import optim
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-
-#Custom Dataset class
-
-
-#Custom Dataloader class for train/test
+import STRDataset.py as dataset
 
 
 
@@ -49,20 +44,28 @@ class CNN(nn.Module):
         return(out)
 
 
-    
 if __name__ == "__main__":
     
 
-#Create train, valid, test datasets + dataloaders 
+#Create train, test datasets + dataloaders 
+#samplename_locus.npy
 
-    
-    
-    
+ohe_dir = "/data/"
+meta_file = "/nfs/turbo/dcmb-class/bioinf593/groups/group_05/output/depth/"
+
+dataset = dataset.STRDataset(ohe_dir, meta_file) 
+meta = pd.read_csv(meta_file)
+train_indices = meta.index[meta["split"] == 0]
+test_indices = meta.index[meta["split"] == 1]
+
+trainloader = Subset(dataset, train_indices)
+validloader = Subset(dataset, test_indices)
+
+
 #Train
-
 #Parameters (to change): 
 pos_count = 1000
-max_epochs = 50
+max_epochs = 10
 learning = 0.0001
 
 net = CNN(pos_count).to(device)
