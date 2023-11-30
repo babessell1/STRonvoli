@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 from torch.utils import data
+import re
 
 class STRDataset(data.Dataset):
     """
@@ -9,7 +10,7 @@ class STRDataset(data.Dataset):
     """
     def __init__(self, ohe_dir, metadata_file):
         self.ohe_dir = ohe_dir # each file is a one-hot encoding of the sequence and depth at a locus
-        self.metadata = pd.read_csv(metadata_file) # contains truth labels and metadata
+        self.metadata = pd.read_csv(metadata_file, sep = '\t') # contains truth labels and metadata
 
     def __len__(self):
         return len(self.annots)
@@ -22,11 +23,11 @@ class STRDataset(data.Dataset):
         ohe = np.load(ohe_file)
         
         mc = self.metadata['MC'].iloc[idx]
-        mc_split = mc.str.split(',', expand=True).astype(float)
-        label = mc_split.apply(lambda row: max(row[0], row[1]), axis=1)
+        mc_split = mc.split(',')
+        label = max(mc_split)
         
         metadata = self.metadata.iloc[idx]
-
+   
         flanking_reads_vectorized = self.vectorize_flanking(metadata) # 50
         inrepeat_reads_sum = self.sum_inrepeat(metadata) # 1
         spanning_reads_sum = self.sum_spanning(metadata) # 1
@@ -38,7 +39,7 @@ class STRDataset(data.Dataset):
 
         return ohe, label, mlp_array
     
-    def vectorize_motif(metadata):
+    def vectorize_motif(self,metadata):
         base_dict = {
             'A': 1,
             'C': 2,
@@ -51,7 +52,7 @@ class STRDataset(data.Dataset):
             motif_arr[i] = base_dict[char]
         return motif_arr
     
-    def vectorize_flanking(metadata):
+    def vectorize_flanking(self, metadata):
         flanking_reads = metadata['flanking_reads'].replace(' ', '').split('),(')
         flanking_reads_list = [tuple(map(int, t.strip('()').split(','))) for t in flanking_reads if t!= '']
         filtered_flanking_reads = [t for t in flanking_reads_list if t[0] <= 50] # number of loci with flanking reads in >50 repeats drastically drops off
@@ -60,13 +61,13 @@ class STRDataset(data.Dataset):
             flanking_reads_vectorized[index - 1] = value
         return flanking_reads_vectorized
     
-    def sum_inrepeat(metadata):
+    def sum_inrepeat(self, metadata):
         inrepeat_reads = metadata['inrepeat_reads'].replace(' ', '').split('),(')
         inrepeat_reads_list = [tuple(map(int, t.strip('()').split(','))) for t in inrepeat_reads if t!= '']
         inrepeat_reads_sum = sum(t[1] for t in inrepeat_reads_list)
         return inrepeat_reads_sum
     
-    def sum_spanning(metadata):
+    def sum_spanning(self, metadata):
         spanning_reads = metadata['spanning_reads'].replace(' ', '').split('),(')
         spanning_reads_list = [tuple(map(int, t.strip('()').split(','))) for t in spanning_reads if t!= '']
         spanning_reads_sum = sum(t[1] for t in spanning_reads_list)
