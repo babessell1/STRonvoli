@@ -10,7 +10,8 @@ from torch import optim
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 import sys
 import STRDataset as dataset
-
+import os
+import time
 
 
 #Design CNN model 
@@ -19,7 +20,7 @@ class CNN(nn.Module):
     def __init__(self, size):
         '''size is the length of the metadata'''
         super(CNN, self).__init__()
-        self.conv1 = nn.Conv1d(5, 320, kernel_size = 6)#Output of this should be (batchsize, 320,1000-5) assuming no padding and kernel size = num columns 
+        self.conv1 = nn.Conv1d(5, 320, kernel_size = 6)#If input rows = 1000, output of this should be (batchsize, 320,1000-5) assuming no padding and kernel size = num columns 
         self.pool1 = nn.MaxPool1d(5) #(Kernel size, stride) = (5,1). So output of this should be (batchsize, 320, 995/5)
         self.conv2 = nn.Conv1d(320,480, kernel_size = 5) #Output should be (batchsize, 480,195)
         self.pool2 = nn.MaxPool1d(5) #Output shd be (batchsize, 480, 39)
@@ -50,7 +51,7 @@ class CNN(nn.Module):
 if __name__ == "__main__":
     
 
-    #Create train, test datasets + dataloaders 
+    #Create train, test datasets + dataloaders. Take subset of train/test based on chromosome as indicated in metadata file
     #samplename_locus.npy
 
     ohe_dir = "/nfs/turbo/dcmb-class/bioinf593/groups/group_05/STRonvoli/data/ohe/"
@@ -64,9 +65,9 @@ if __name__ == "__main__":
     trainset = Subset(dataset, train_indices)
     validset = Subset(dataset, test_indices)
     
-    trainloader = DataLoader(trainset, batch_size = 4, shuffle=True)
-    validloader = DataLoader(validset, batch_size = 4, shuffle=True)
-
+    num = 6
+    trainloader = DataLoader(trainset, batch_size = 64, shuffle=True, num_workers = num)
+    validloader = DataLoader(validset, batch_size = 64, shuffle=True, num_workers = num)
         
     #Test if the loaders work
     '''
@@ -77,17 +78,29 @@ if __name__ == "__main__":
         print(labels.shape)
         print(meta.shape)
     '''
-
-
+    
+    #Sweep through num workers to find ideal
+    '''
+    for num_workers in range(2, os.cpu_count(), 2):  
+        sub = Subset(dataset, train_indices[0:1000])
+        train_loader = DataLoader(sub,shuffle=True,num_workers=num_workers,batch_size=64,pin_memory=True)
+        start = time.time()
+        for i, data in enumerate(train_loader):
+            pass
+        end = time.time()
+        print("Finish with:{} second, num_workers={}".format(end - start, num_workers))
+   
+    '''
+    
+    
     #Train
     #Parameters (to change): 
-    pos_count = 1000
+    pos_count = 500
     meta_count = 79
-    max_epochs = 5
-    learning = 0.0001
+    max_epochs = 10
+    learning = 0.001
 
     net = CNN(meta_count).to(device)
-    #criterion = nn.CrossEntropyLoss()  # Same as NLLLoss except NLLLoss takes output of softmax func
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr=learning)
 
@@ -98,6 +111,7 @@ if __name__ == "__main__":
         batch_size = 0 #Track total number of samples.. should just be overall total but just to ensure
         net.train() #Train model
         print(len(trainloader))
+        start_time = time.time()
         for (batch_idx, batch) in enumerate(trainloader):
             (X, labels, meta) = batch
             X = X.to(device)
@@ -107,13 +121,13 @@ if __name__ == "__main__":
             X = X.float()
             meta = meta.float()
             labels = labels.float()
-            
             optimizer.zero_grad()
             output = net(X, meta) #Will be (batch_size, 10)
             loss = criterion(output, labels)
             loss.backward()
             optimizer.step()
-            #print(f'batch done, loss is {loss}')
+            #print(f'batch {batch_idx} done, loss is {loss}, time from start of batches is {time.time() - start_time}')
+            
             #loss_l.append(loss.cpu().detach().numpy()) #Remove grad requirement + convert to np array to be able to plot
             #batch_size += len(labels)
         #losses.append(sum(loss_l)/batch_size)
