@@ -149,6 +149,7 @@ if __name__ == "__main__":
             Y = Y.to(device)
             y = y.to(device)
             m = m.to(device)
+            Y = torch.transpose(Y,1,2)
             Y = Y.float()
             y = y.float()
             m = m.float()
