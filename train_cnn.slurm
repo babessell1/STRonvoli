@@ -7,6 +7,7 @@
 #SBATCH --gpus-per-task=1
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
+#SBATCH --cpus-per-task=6
 #SBATCH --mem-per-gpu=30g
 #SBATCH --time=08:00:00
 #SBATCH --account=bioinf593f23_class
