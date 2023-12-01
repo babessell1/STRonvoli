@@ -11,9 +11,10 @@ class STRDataset(data.Dataset):
     def __init__(self, ohe_dir, metadata_file):
         self.ohe_dir = ohe_dir # each file is a one-hot encoding of the sequence and depth at a locus
         self.metadata = pd.read_csv(metadata_file, sep = '\t') # contains truth labels and metadata
+        self.annots = len(self.metadata.index)
 
     def __len__(self):
-        return len(self.annots)
+        return self.annots
     
     def __getitem__(self, idx):
         locus = self.metadata['trid'].iloc[idx]
@@ -24,7 +25,7 @@ class STRDataset(data.Dataset):
         
         mc = self.metadata['MC'].iloc[idx]
         mc_split = mc.split(',')
-        label = max(mc_split)
+        label = float(max(mc_split))
         
         metadata = self.metadata.iloc[idx]
    
@@ -35,9 +36,15 @@ class STRDataset(data.Dataset):
         motif_len = metadata['len_motif'] # 1
         repeat_region_len = metadata['len_repeat_region'] # 1
 
-        mlp_array = np.array([flanking_reads_vectorized, inrepeat_weighted_mean, spanning_reads_features, motif_vec, motif_len, repeat_region_len]) # len(mlp_array) == 79
+        #mlp_array = np.array([flanking_reads_vectorized, inrepeat_weighted_mean, spanning_reads_features, motif_vec, motif_len, repeat_region_len]) # len(mlp_array) == 79
+        
+        mlp_array = flanking_reads_vectorized
+        mlp_array = np.append(mlp_array, inrepeat_weighted_mean)
+        mlp_array = np.concatenate((mlp_array, spanning_reads_features, motif_vec))
+        mlp_array = np.append(mlp_array, motif_len)
+        mlp_array = np.append(mlp_array, repeat_region_len)
 
-        return ohe, label, mlp_array
+        return (ohe, label, mlp_array)
     
     def vectorize_motif(self, metadata):
         base_dict = {
@@ -84,5 +91,11 @@ class STRDataset(data.Dataset):
         else:
             spanning_reads_list = [tuple(map(int, t.strip('()').split(','))) for t in spanning_reads if t!= '']
             sorted_spanning_reads_list = sorted(spanning_reads_list, key=lambda x: x[1], reverse=True)
-            spanning_reads_features = [item for t in sorted_spanning_reads_list[0] for item in t]
+            spanning_reads_features = np.array(list(sorted_spanning_reads_list[0]))
             return spanning_reads_features
+        
+        
+        
+        
+        
+        
