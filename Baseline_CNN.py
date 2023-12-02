@@ -155,7 +155,7 @@ if __name__ == "__main__":
             Y = torch.transpose(Y,1,2)
             Y = Y.float()
             y = y.float()
-            y = torch.reshape(y, (y, size(dim=0),1))
+            y = torch.reshape(y, (y.size(dim=0),1))
             m = m.float()
             
             out = net(Y,m)
