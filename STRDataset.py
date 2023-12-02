@@ -14,9 +14,11 @@ class STRDataset(data.Dataset):
         return len(self.annots)
     
     def __getitem__(self, idx):
-        locus = self.metadata['locus'].iloc[idx]
+        locus = self.metadata['trid'].iloc[idx]
         ohe = os.path.join(self.ohe_dir, f'{locus}.npy')
-        label = self.metadata['labels'].iloc[idx]
-        metadata = self.metadata.iloc[idx, 2:]
+        mc = self.metadata['MC'].iloc[idx]
+        mc_split = mc.str.split(',', expand=True).astype(float)
+        label = mc_split.apply(lambda row: max(row[0], row[1]), axis=1)
+        metadata = self.metadata.iloc[idx, :]
 
         return ohe, label, metadata
