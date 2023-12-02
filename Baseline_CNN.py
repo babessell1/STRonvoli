@@ -45,8 +45,8 @@ class CNN(nn.Module):
         out = nn.functional.relu(self.fc3(out))
         
         return(out)
-
     
+
 
 if __name__ == "__main__":
     
@@ -104,14 +104,15 @@ if __name__ == "__main__":
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr=learning)
 
-    #losses = [] #Gives loss for each epoch (keys are epochs)
+    losses = [] #training loss for each epoch (keys are epochs)
     losses_t = [] #Test loss over epochs
     for e in range(max_epochs):
-        loss_l = 0
-        batch_size = 0 #Track total number of samples.. should just be overall total but just to ensure
+        loss_l = 0 #Track validation loss in each epoch
         net.train() #Train model
         print(len(trainloader))
         start_time = time.time()
+        total_loss = 0 #Track training loss in each epoch
+        
         for (batch_idx, batch) in enumerate(trainloader):
             (X, labels, meta) = batch
             X = X.to(device)
@@ -121,16 +122,18 @@ if __name__ == "__main__":
             X = X.float()
             meta = meta.float()
             labels = labels.float()
+            labels = torch.reshape(labels, (labels.size(dim=0),1))
+            
             optimizer.zero_grad()
-            output = net(X, meta) #Will be (batch_size, 10)
+            output = net(X, meta) #Will be (batch_size,1)
             loss = criterion(output, labels)
             loss.backward()
             optimizer.step()
             #print(f'batch {batch_idx} done, loss is {loss}, time from start of batches is {time.time() - start_time}')
             
-            #loss_l.append(loss.cpu().detach().numpy()) #Remove grad requirement + convert to np array to be able to plot
-            #batch_size += len(labels)
-        #losses.append(sum(loss_l)/batch_size)
+            total_loss += (loss.cpu().detach().numpy()) #Remove grad requirement + convert to np array to be able to plot
+            #print(total_loss)
+        losses.append(total_loss/len(trainloader))
         #print(losses[e])
         print(f'Epoch {e} done')
         
@@ -141,7 +144,7 @@ if __name__ == "__main__":
             'epoch': e,
             'model_state_dict': net.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
-            'loss': loss}, path)  # saving model
+            'loss': total_loss}, path)  # saving model
         
 
         net.eval()
@@ -152,6 +155,7 @@ if __name__ == "__main__":
             Y = torch.transpose(Y,1,2)
             Y = Y.float()
             y = y.float()
+            y = torch.reshape(y, (y, size(dim=0),1))
             m = m.float()
             
             out = net(Y,m)
@@ -162,9 +166,20 @@ if __name__ == "__main__":
         print(loss_l/len(validloader))
 
 
+    figure(0)
     plt.plot(losses_t)
     plt.xlabel('Epochs')
-    plt.ylabel('Average cross entropy loss over batches in each epoch')
+    plt.ylabel('Average MSE loss over batches in each epoch')
     plt.title('Validation Loss over epochs for STR prediction using CNN')
     plt.savefig('Average Validation loss (across all batches) over epochs')
+    
+    figure(1)
+    plt.plot(losses)
+    plt.xlabel('Epochs')
+    plt.ylabel('Average MSE loss over batches in each epoch')
+    plt.title('Training Loss over epochs for STR prediction using CNN')
+    plt.savefig('Average Training loss (across all batches) over epochs')
+    
+    
+    
     
