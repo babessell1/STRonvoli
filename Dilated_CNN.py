@@ -17,10 +17,10 @@ import time
 
 #Design CNN model 
 # Use dialted model
-class CNN(nn.Module):
+class Dialated_CNN(nn.Module):
     def __init__(self, size):
         '''size is the length of the metadata'''
-        super(CNN, self).__init__()
+        super(Dialated_CNN, self).__init__()
         self.conv1 = nn.Conv1d(5, 320, kernel_size = 6)#If input rows = 1000, output of this should be (batchsize, 320,1000-5) assuming no padding and kernel size = num columns 
         self.pool1 = nn.MaxPool1d(5) #(Kernel size, stride) = (5,1). So output of this should be (batchsize, 320, 995/5)
         self.conv2 = nn.Conv1d(320,480, kernel_size = 5) #Output should be (batchsize, 480,195)
@@ -46,7 +46,6 @@ class CNN(nn.Module):
         out = nn.functional.relu(self.fc3(out))
         
         return(out)
-    
 
 
 if __name__ == "__main__":
@@ -69,6 +68,7 @@ if __name__ == "__main__":
     num = 6
     trainloader = DataLoader(trainset, batch_size = 64, shuffle=True, num_workers = num)
     validloader = DataLoader(validset, batch_size = 64, shuffle=True, num_workers = num)
+    print("Data process ready")
         
     #Test if the loaders work
     '''
@@ -93,7 +93,7 @@ if __name__ == "__main__":
    
     '''
     
-    print("Data process ready")
+    
     #Train
     #Parameters (to change): 
     pos_count = 500
@@ -101,7 +101,7 @@ if __name__ == "__main__":
     max_epochs = 10
     learning = 0.001
 
-    net = CNN(meta_count).to(device)
+    net = Dialated_CNN(meta_count).to(device)
     criterion = nn.MSELoss()
     optimizer = optim.Adam(net.parameters(), lr=learning)
     print("Model set up ready")
@@ -110,7 +110,7 @@ if __name__ == "__main__":
     for e in range(max_epochs):
         loss_l = 0 #Track validation loss in each epoch
         net.train() #Train model
-        print(len(trainloader))
+        # print(len(trainloader))
         start_time = time.time()
         total_loss = 0 #Track training loss in each epoch
         
@@ -140,7 +140,7 @@ if __name__ == "__main__":
         
         #Save model 
         savedir = "/nfs/turbo/dcmb-class/bioinf593/groups/group_05/STRonvoli/models/"
-        path = os.path.join(savedir, f'epoch-{e}-model.pth')
+        path = os.path.join(savedir, f'epoch-{e}-model-dilated.pth')
         torch.save({
             'epoch': e,
             'model_state_dict': net.state_dict(),
@@ -156,7 +156,7 @@ if __name__ == "__main__":
             Y = torch.transpose(Y,1,2)
             Y = Y.float()
             y = y.float()
-            y = torch.reshape(y, (y, size(dim=0),1))
+            y = torch.reshape(y, (y.size(dim=0),1))
             m = m.float()
             
             out = net(Y,m)
@@ -167,14 +167,14 @@ if __name__ == "__main__":
         print(loss_l/len(validloader))
 
 
-    figure(0)
+    plt.figure(0)
     plt.plot(losses_t)
     plt.xlabel('Epochs')
     plt.ylabel('Average MSE loss over batches in each epoch')
     plt.title('Validation Loss over epochs for STR prediction using CNN')
     plt.savefig('Average Validation loss (across all batches) over epochs')
     
-    figure(1)
+    plt.figure(1)
     plt.plot(losses)
     plt.xlabel('Epochs')
     plt.ylabel('Average MSE loss over batches in each epoch')
