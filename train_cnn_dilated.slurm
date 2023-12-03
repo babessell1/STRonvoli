@@ -12,7 +12,7 @@
 #SBATCH --time=08:00:00
 #SBATCH --account=bioinf593f23_class
 #SBATCH --partition=gpu
-#SBATCH --output=/nfs/turbo/dcmb-class/bioinf593/groups/group_05/training-dilated.log
+#SBATCH --output=/nfs/turbo/dcmb-class/bioinf593/groups/group_05/training-dilated-updated.log
 
 eval "$(conda shell.bash hook)"
 conda activate scvi-env
@@ -20,4 +20,3 @@ conda activate scvi-env
 # The application(s) to execute along with its input arguments and options:
 python3 Dilated_CNN.py
 /bin/hostname
-sleep 60

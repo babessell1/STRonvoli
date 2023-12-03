@@ -19,14 +19,15 @@ import time
 # Use dialted model
 class Dialated_CNN(nn.Module):
     def __init__(self, size):
-        '''size is the length of the metadata'''
+        '''size is the total number of positions (around start + end) we have'''
         super(Dialated_CNN, self).__init__()
-        self.conv1 = nn.Conv1d(5, 320, kernel_size = 6)#If input rows = 1000, output of this should be (batchsize, 320,1000-5) assuming no padding and kernel size = num columns 
-        self.pool1 = nn.MaxPool1d(5) #(Kernel size, stride) = (5,1). So output of this should be (batchsize, 320, 995/5)
-        self.conv2 = nn.Conv1d(320,480, kernel_size = 5) #Output should be (batchsize, 480,195)
-        self.pool2 = nn.MaxPool1d(5) #Output shd be (batchsize, 480, 39)
+        self.conv1 = nn.Conv1d(5, 320, kernel_size = 6,
+                               dilation=10) # (batchsize, 320, 445)
+        self.pool1 = nn.MaxPool1d(5) # (batchsize, 320, 89)
+        self.conv2 = nn.Conv1d(320,480, kernel_size = 5) # (batchsize, 480, 85)
+        self.pool2 = nn.MaxPool1d(5) # (batchsize, 480, 17)
         
-        self.fc1 = nn.Linear(9120 + size, 256) #THE input will be larger based on how big metadata is (we input in forward func)
+        self.fc1 = nn.Linear((480*17)+size, 256) #THE input will be larger based on how big metadata is (we input in forward func)
         self.fc2 = nn.Linear(256,128)
         self.fc3 = nn.Linear(128,1)
     
@@ -36,8 +37,8 @@ class Dialated_CNN(nn.Module):
         out = nn.functional.relu(self.conv2(out))
         out = self.pool2(out)
  
-        out = torch.flatten(out, start_dim=1) #Should return (batchsize, 480*39)
-        #print(out.shape) #(4,9120)
+        out = torch.flatten(out, start_dim=1) #Should return (batchsize, 480*17)
+        # print(out.shape)
         
         #Concatenate metadata here!
         out = torch.cat((out,meta),1)
@@ -130,7 +131,7 @@ if __name__ == "__main__":
             loss = criterion(output, labels)
             loss.backward()
             optimizer.step()
-            #print(f'batch {batch_idx} done, loss is {loss}, time from start of batches is {time.time() - start_time}')
+            # print(f'batch {batch_idx} done, loss is {loss}, time from start of batches is {time.time() - start_time}')
             
             total_loss += (loss.cpu().detach().numpy()) #Remove grad requirement + convert to np array to be able to plot
             #print(total_loss)
@@ -139,7 +140,7 @@ if __name__ == "__main__":
         print(f'Epoch {e} done')
         
         #Save model 
-        savedir = "/nfs/turbo/dcmb-class/bioinf593/groups/group_05/STRonvoli/models/"
+        savedir = "/nfs/turbo/dcmb-class/bioinf593/groups/group_05/STRonvoli/models/dilation/"
         path = os.path.join(savedir, f'epoch-{e}-model-dilated.pth')
         torch.save({
             'epoch': e,
@@ -171,15 +172,15 @@ if __name__ == "__main__":
     plt.plot(losses_t)
     plt.xlabel('Epochs')
     plt.ylabel('Average MSE loss over batches in each epoch')
-    plt.title('Validation Loss over epochs for STR prediction using CNN')
-    plt.savefig('Average Validation loss (across all batches) over epochs')
+    plt.title('Validation Loss over epochs for STR prediction using Dilated CNN')
+    plt.savefig('Average Validation loss (across all batches) over epochs - Dilated')
     
     plt.figure(1)
     plt.plot(losses)
     plt.xlabel('Epochs')
     plt.ylabel('Average MSE loss over batches in each epoch')
-    plt.title('Training Loss over epochs for STR prediction using CNN')
-    plt.savefig('Average Training loss (across all batches) over epochs')
+    plt.title('Training Loss over epochs for STR prediction using Dilated CNN')
+    plt.savefig('Average Training loss (across all batches) over epochs - Dilated')
     
     
     
